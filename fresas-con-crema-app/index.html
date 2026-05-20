@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FresaConta 🍓 | Contabilidad, Ventas y Costos</title>
+  
+  <!-- Enlace a Estilos Custom -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Chart.js para Gráficos Interactivos desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Lucide Icons para Iconografía Premium -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- PANTALLA DE LOGIN (PREMIUM VELVET STYLE) -->
+  <div class="login-overlay" id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">🍓</div>
+      <h2>FresaConta</h2>
+      <p>Control de Contabilidad, Ventas y Costos</p>
+      
+      <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+      
+      <form id="form-login">
+        <div class="form-group">
+          <label for="login-username">Usuario</label>
+          <input type="text" id="login-username" class="input-style" placeholder="Ej: admin" required autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" class="input-style" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">
+          <i data-lucide="log-in"></i> Iniciar Sesión
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-container" style="display: none;" id="app-wrapper">
+    
+    <!-- 1. NAVEGACIÓN LATERAL (SIDEBAR / BOTTOM BAR EN MÓVIL) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-logo">🍓</span>
+        <div class="brand-info">
+          <h1>FresaConta</h1>
+          <span>Fresas con Crema</span>
+        </div>
+      </div>
+      
+      <nav class="nav-menu">
+        <li class="nav-item active vendedor-hidden" data-tab="dashboard">
+          <a class="nav-link">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="sales">
+          <a class="nav-link">
+            <i data-lucide="shopping-cart"></i>
+            <span>Ventas</span>
+          </a>
+        </li>
+        <li class="nav-item vendedor-hidden" data-tab="costs">
+          <a class="nav-link">
+            <i data-lucide="dollar-sign"></i>
+            <span>Costos</span>
+          </a>
+        </li>
+        <li class="nav-item vendedor-hidden" data-tab="analysis">
+          <a class="nav-link">
+            <i data-lucide="trending-up"></i>
+            <span>Análisis</span>
+          </a>
+        </li>
+        <li class="nav-item vendedor-hidden" data-tab="settings">
+          <a class="nav-link">
+            <i data-lucide="settings"></i>
+            <span>Ajustes</span>
+          </a>
+        </li>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="bcv-widget">
+          <div class="bcv-title">Tasa Oficial BCV</div>
+          <div class="bcv-value" id="sidebar-bcv-rate">--.-- VES</div>
+          <div class="bcv-status" id="sidebar-bcv-status">Cargando...</div>
+          <button class="btn-bcv-update vendedor-hidden" id="btn-open-bcv-modal">Ajustar Tasa</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. CONTENIDO PRINCIPAL DE LA APLICACIÓN -->
+    <main class="main-content">
+      
+      <!-- Barra de Encabezado Superior -->
+      <header class="header-bar">
+        <div class="page-title">
+          <h2 id="view-title">Dashboard</h2>
+          <p id="view-subtitle">Resumen general del estado financiero de hoy.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="btn-secondary btn-icon" id="btn-theme-toggle" title="Alternar Tema" style="padding: 10px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; height: 44px; width: 44px;">
+            <i data-lucide="sun"></i>
+          </button>
+          <div class="date-badge">
+            <i data-lucide="calendar"></i>
+            <span id="current-date-display">20 de Mayo, 2026</span>
+          </div>
+          <button class="btn-logout" id="btn-logout" title="Cerrar Sesión">
+            <i data-lucide="log-out"></i>
+            <span class="vendedor-hidden">Cerrar Sesión</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- PESTAÑA A: DASHBOARD -->
+      <section id="view-dashboard" class="view-pane active">
+        <!-- Rejilla de Métricas KPI -->
+        <div class="kpi-grid">
+          <!-- KPI Ventas del Día -->
+          <div class="kpi-card">
+            <div class="kpi-icon">
+              <i data-lucide="shopping-bag"></i>
+            </div>
+            <div class="kpi-label">Ventas de Hoy</div>
+            <div class="kpi-value-container">
+              <div class="kpi-value-usd" id="kpi-sales-qty">0 copas</div>
+              <div class="kpi-value-ves" id="kpi-sales-cash">$0.00 / 0.00 VES</div>
+            </div>
+            <div class="kpi-indicator positive" id="kpi-sales-indicator">
+              <i data-lucide="arrow-up-right"></i><span>Cargando datos...</span>
+            </div>
+          </div>
+          
+          <!-- KPI Margen de Utilidad -->
+          <div class="kpi-card teal-accent">
+            <div class="kpi-icon">
+              <i data-lucide="percent"></i>
+            </div>
+            <div class="kpi-label">Margen de Utilidad</div>
+            <div class="kpi-value-container">
+              <div class="kpi-value-usd" id="kpi-margin-percent">0.0%</div>
+              <div class="kpi-value-ves" id="kpi-margin-value">Ganancia de $0.00 / copa</div>
+            </div>
+            <div class="kpi-indicator positive" id="kpi-margin-indicator">
+              <i data-lucide="activity"></i><span>Margen saludable</span>
+            </div>
+          </div>
+
+          <!-- KPI Costo Unitario de Materiales -->
+          <div class="kpi-card cream-accent">
+            <div class="kpi-icon">
+              <i data-lucide="layers"></i>
+            </div>
+            <div class="kpi-label">Costo por Copa (Receta)</div>
+            <div class="kpi-value-container">
+              <div class="kpi-value-usd" id="kpi-cost-usd">$0.00</div>
+              <div class="kpi-value-ves" id="kpi-cost-ves">0.00 VES / copa</div>
+            </div>
+            <div class="kpi-indicator neutral" id="kpi-cost-indicator">
+              <i data-lucide="info"></i><span>Basado en ingredientes</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalles del Dashboard -->
+        <div class="dashboard-details">
+          <!-- Historial de Ventas Recientes del Día -->
+          <div class="recent-activity-card">
+            <div class="section-header">
+              <h3>Ventas del Día de Hoy</h3>
+              <button class="btn-secondary btn-icon" id="btn-quick-sales" title="Ir a Ventas">
+                <i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+            <div class="table-container">
+              <table class="table-style" id="dashboard-sales-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Producto</th>
+                    <th>Tasa BCV</th>
+                    <th>Total (USD)</th>
+                    <th>Total (VES)</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Generado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Resumen de Costos del Negocio (Inventario vs Fijos) -->
+          <div class="recent-activity-card">
+            <div class="section-header">
+              <h3>Estructura del Negocio</h3>
+            </div>
+            <div style="height: 250px; position: relative;">
+              <canvas id="chart-estructura-precio"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PESTAÑA B: REGISTRO DE VENTAS -->
+      <section id="view-sales" class="view-pane">
+        <div class="costs-layout">
+          <!-- Formulario de Ventas -->
+          <div class="card-form">
+            <h3 class="form-title">
+              <i data-lucide="plus-circle"></i> Registrar Nueva Venta
+            </h3>
+            <form id="form-add-sale">
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="sale-product-select">Seleccionar Producto</label>
+                <select id="sale-product-select" class="input-style" style="background-color: var(--bg-input);" required>
+                  <!-- Cargado dinámicamente -->
+                </select>
+              </div>
+
+              <div class="form-group-grid">
+                <div class="form-group">
+                  <label for="sale-qty">Cantidad Vendida</label>
+                  <input type="number" id="sale-qty" class="input-style" min="1" placeholder="Ej: 5" required>
+                </div>
+                <div class="form-group">
+                  <label for="sale-price">Precio Unitario (USD)</label>
+                  <div class="input-with-prefix">
+                    <span class="input-prefix">$</span>
+                    <input type="number" id="sale-price" class="input-style" step="0.01" min="0.10" placeholder="0.00" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group-grid">
+                <div class="form-group">
+                  <label for="sale-date">Fecha de Venta</label>
+                  <input type="date" id="sale-date" class="input-style" required>
+                </div>
+                <div class="form-group">
+                  <label for="sale-time">Hora de Venta</label>
+                  <input type="time" id="sale-time" class="input-style" required>
+                </div>
+              </div>
+
+              <div class="form-group-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="sale-bcv">Tasa BCV del Día</label>
+                  <input type="number" id="sale-bcv" class="input-style" step="0.01" placeholder="Cargando..." readonly required>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                <button type="submit" class="btn-primary">
+                  <i data-lucide="check"></i> Guardar Venta
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Historial de Ventas Totales -->
+          <div class="recent-activity-card">
+            <div class="section-header">
+              <h3>Historial de Ventas</h3>
+            </div>
+            <div class="table-container">
+              <table class="table-style" id="sales-history-table">
+                <thead>
+                  <tr>
+                    <th>Fecha/Hora</th>
+                    <th>Producto</th>
+                    <th>Precio</th>
+                    <th>Tasa BCV</th>
+                    <th>Total (USD)</th>
+                    <th>Total (VES)</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Generado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PESTAÑA C: COSTOS (RECETA E INVENTARIO / GASTOS FIJOS) -->
+      <section id="view-costs" class="view-pane">
+        <div class="costs-layout">
+          <!-- Receta / Inventario de Materiales -->
+          <div class="recent-activity-card">
+            <div class="section-header">
+              <h3>Ingredientes y Envases (Costo Unitario)</h3>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: -1rem; margin-bottom: 1rem;">
+              Edita el costo de tus insumos en USD y define la cantidad exacta que lleva cada copa de fresas con crema.
+            </p>
+            <div class="table-container">
+              <table class="table-style" id="inventory-table">
+                <thead>
+                  <tr>
+                    <th>Material</th>
+                    <th>Costo USD</th>
+                    <th>Por Unidad</th>
+                    <th>Uso por Copa</th>
+                    <th>Costo por Copa</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Generado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="recipe-summary-widget">
+              <div class="recipe-summary-info">
+                <h4>Costo de Materiales por Copa</h4>
+                <p>Suma total del costo de ingredientes y kit de envase.</p>
+              </div>
+              <div class="recipe-summary-cost">
+                <div class="cost-usd" id="recipe-cost-usd">$0.00</div>
+                <div class="cost-ves" id="recipe-cost-ves">0.00 VES</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Productos del Local (Vaso Pequeño, Mediano, Grande, etc.) -->
+          <div class="recent-activity-card" style="margin-top: 1.5rem;">
+            <div class="section-header">
+              <h3>Productos del Local</h3>
+              <button class="btn-primary" id="btn-add-product-ui" style="padding: 6px 12px; font-size: 0.8rem;">
+                <i data-lucide="plus"></i> Nuevo Producto
+              </button>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: -1rem; margin-bottom: 1rem;">
+              Lista de productos a la venta, sus precios de venta y costo total de ingredientes.
+            </p>
+            <div class="table-container">
+              <table class="table-style" id="products-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Precio USD</th>
+                    <th>Costo Receta</th>
+                    <th>Margen</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Generado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de Edición de Material / Gastos Fijos / Productos -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+          <!-- Formulario de Producto y Receta -->
+          <div class="card-form" id="product-editor-card" style="display: none; border: 1px solid var(--border-glass);">
+            <h3 class="form-title" id="product-editor-title">
+              <i data-lucide="plus-circle"></i> Nuevo / Editar Producto
+            </h3>
+            <form id="form-edit-product">
+              <input type="hidden" id="edit-prod-id">
+              
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="edit-prod-name">Nombre del Producto</label>
+                <input type="text" id="edit-prod-name" class="input-style" placeholder="Ej: Vaso Mediano" required>
+              </div>
+              
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="edit-prod-price">Precio de Venta (USD)</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="edit-prod-price" class="input-style" step="0.01" min="0.10" placeholder="2.50" required>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-weight:600; margin-bottom:0.25rem; display:block;">Receta (Uso de Insumos por Copa)</label>
+                <div id="recipe-ingredients-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- Generado dinámicamente -->
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn-secondary" id="btn-cancel-prod-edit">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Producto</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Formulario Material -->
+          <div class="card-form" id="material-editor-card">
+            <h3 class="form-title" id="material-editor-title">
+              <i data-lucide="edit"></i> Editar Insumo
+            </h3>
+            <form id="form-edit-material">
+                <input type="hidden" id="edit-mat-id">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="edit-mat-name">Nombre del Material</label>
+                  <input type="text" id="edit-mat-name" class="input-style" required readonly>
+                </div>
+                <div class="form-group-grid">
+                  <div class="form-group">
+                    <label for="edit-mat-cost">Costo USD de Compra</label>
+                    <div class="input-with-prefix">
+                      <span class="input-prefix">$</span>
+                      <input type="number" id="edit-mat-cost" class="input-style" step="0.01" min="0.01" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="edit-mat-unit">Unidad de Compra</label>
+                    <input type="text" id="edit-mat-unit" class="input-style" placeholder="kg, L, Lata, etc." required readonly>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="edit-mat-used">Cantidad Utilizada por Copa</label>
+                  <input type="number" id="edit-mat-used" class="input-style" step="0.0001" min="0.0001" required>
+                  <span style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">
+                    Ej: Si compras por kg (1000g) y usas 150g, ingresa 0.15.
+                  </span>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                  <button type="button" class="btn-secondary" id="btn-cancel-mat-edit">Cancelar</button>
+                  <button type="submit" class="btn-primary">Guardar Cambios</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Gastos Fijos -->
+            <div class="recent-activity-card">
+              <div class="section-header">
+                <h3>Gastos Fijos Registrados</h3>
+              </div>
+              <div class="table-container">
+                <table class="table-style" id="fixed-costs-table">
+                  <thead>
+                    <tr>
+                      <th>Gasto</th>
+                      <th>Costo USD</th>
+                      <th>Frecuencia</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Generado dinámicamente -->
+                  </tbody>
+                </table>
+              </div>
+              
+              <div style="border-top: 1px solid var(--border-glass-light); margin-top: 1.5rem; padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: var(--text-secondary);">Total Costo Fijo Mensual:</span>
+                <span style="font-family: var(--font-title); font-size: 1.4rem; font-weight: 700; color: var(--cream);" id="total-fixed-cost-monthly">$0.00</span>
+              </div>
+              
+              <hr style="border: none; border-top: 1px solid var(--border-glass-light); margin: 1.5rem 0;">
+              
+              <!-- Añadir Costo Fijo -->
+              <h4 class="form-title" style="font-size: 1.1rem; margin-bottom: 1rem;">
+                <i data-lucide="plus"></i> Añadir Gasto Fijo
+              </h4>
+              <form id="form-add-fixed-cost">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="fc-name">Nombre del Gasto (Renta, Luz, Sueldo)</label>
+                  <input type="text" id="fc-name" class="input-style" placeholder="Ej: Internet del local" required>
+                </div>
+                <div class="form-group-grid" style="margin-bottom: 1rem;">
+                  <div class="form-group">
+                    <label for="fc-cost">Costo en USD</label>
+                    <div class="input-with-prefix">
+                      <span class="input-prefix">$</span>
+                      <input type="number" id="fc-cost" class="input-style" step="0.01" min="0.01" placeholder="45.00" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="fc-frequency">Frecuencia</label>
+                    <select id="fc-frequency" class="input-style" style="background-color: var(--bg-input);">
+                      <option value="mensual">Mensual</option>
+                      <option value="semanal">Semanal</option>
+                      <option value="diario">Diario</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">
+                  <i data-lucide="plus"></i> Registrar Gasto Fijo
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PESTAÑA D: ANÁLISIS Y PROYECCIONES -->
+      <section id="view-analysis" class="view-pane">
+        <!-- Rejilla de Gráficos -->
+        <div class="analysis-layout">
+          <!-- Gráfico 1: Tendencia de Ventas -->
+          <div class="chart-card">
+            <div class="section-header">
+              <h3>Tendencia de Ventas (Últimos 7 registros)</h3>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-sales-trend"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Estructura de Costo vs Venta -->
+          <div class="chart-card">
+            <div class="section-header">
+              <h3>Análisis de Margen de la Copa</h3>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-cost-vs-price"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulador interactivo de Proyecciones y Punto de Equilibrio -->
+        <div class="projections-box">
+          <div class="projections-header">
+            <h3>Simulador de Proyección Mensual y Punto de Equilibrio 🧪</h3>
+            <p>Ajusta el precio de venta y tu meta de copas vendidas por día para proyectar las utilidades de tu negocio.</p>
+          </div>
+          
+          <div class="projections-grid">
+            <!-- Controles Sliders -->
+            <div class="simulator-controls">
+              <!-- Slider Copas por Día -->
+              <div class="slider-group">
+                <div class="slider-labels">
+                  <span>Meta de Ventas Diarias</span>
+                  <span id="lbl-sim-qty">30 copas / día</span>
+                </div>
+                <input type="range" id="sim-qty" class="slider-input" min="5" max="150" value="30">
+              </div>
+
+              <!-- Slider Precio de Venta -->
+              <div class="slider-group">
+                <div class="slider-labels">
+                  <span>Precio de Venta por Copa</span>
+                  <span id="lbl-sim-price">$3.50 USD</span>
+                </div>
+                <input type="range" id="sim-price" class="slider-input" min="1.50" max="8.00" step="0.25" value="3.50">
+              </div>
+            </div>
+
+            <!-- Resultados en tiempo real -->
+            <div class="simulator-results">
+              <div class="result-row">
+                <span class="result-label">Ventas Mensuales Estimadas:</span>
+                <span class="result-value" id="res-monthly-qty">900 copas</span>
+              </div>
+              <div class="result-row">
+                <span class="result-label">Ingresos Mensuales Brutos (USD):</span>
+                <span class="result-value" id="res-monthly-revenue">$3,150.00</span>
+              </div>
+              <div class="result-row">
+                <span class="result-label">Costo Total Materiales (Mensual):</span>
+                <span class="result-value" id="res-monthly-materials-cost">$1,183.50</span>
+              </div>
+              <div class="result-row">
+                <span class="result-label">Costo Fijo Operacional (Mensual):</span>
+                <span class="result-value" id="res-monthly-fixed-cost">$315.00</span>
+              </div>
+              <div class="result-row">
+                <span class="result-label">Punto de Equilibrio (Break-even):</span>
+                <span class="result-value" id="res-break-even" style="color: var(--cream);">145 copas / mes</span>
+              </div>
+              <div class="result-row highlight">
+                <span class="result-label">Utilidad Neta Estimada (Mensual):</span>
+                <span class="result-value" id="res-monthly-profit">$1,651.50</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PESTAÑA E: CONFIGURACIONES (AJUSTES) -->
+      <section id="view-settings" class="view-pane">
+        <div class="settings-layout">
+          <!-- Ajustes Generales -->
+          <div class="settings-card">
+            <h3 class="form-title">
+              <i data-lucide="sliders"></i> Parámetros del Negocio
+            </h3>
+            <p class="settings-description">
+              Configura los valores sugeridos por defecto de tu local.
+            </p>
+            
+            <form id="form-settings-general">
+              <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="settings-price">Precio de Venta Sugerido (USD por copa)</label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="settings-price" class="input-style" step="0.01" min="0.10" required>
+                </div>
+                <span style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">
+                  Este precio se cargará automáticamente al registrar ventas.
+                </span>
+              </div>
+              
+              <button type="submit" class="btn-primary" style="width: 100%;">
+                <i data-lucide="save"></i> Guardar Ajustes
+              </button>
+            </form>
+          </div>
+
+          <!-- Respaldo de Base de Datos -->
+          <div class="settings-card">
+            <h3 class="form-title">
+              <i data-lucide="database"></i> Copias de Seguridad y Datos
+            </h3>
+            <p class="settings-description">
+              Exporta tu contabilidad para guardarla o importarla en otro teléfono o computadora.
+            </p>
+            
+            <div class="settings-buttons">
+              <!-- Exportar -->
+              <button class="btn-secondary" id="btn-export-db">
+                <i data-lucide="download"></i> Exportar Base de Datos (JSON)
+              </button>
+              
+              <!-- Importar -->
+              <label for="import-db-file" class="btn-secondary" style="cursor: pointer;">
+                <i data-lucide="upload"></i> Importar Base de Datos (JSON)
+              </label>
+              <input type="file" id="import-db-file" accept=".json" style="display: none;">
+              
+              <hr style="border: none; border-top: 1px solid var(--border-glass-light); margin: 0.5rem 0;">
+              
+              <!-- Restablecer -->
+              <button class="btn-danger" id="btn-reset-db">
+                <i data-lucide="trash-2"></i> Restablecer y Sembrar Datos de Prueba
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL DE OVERRIDE BCV -->
+  <div class="modal-overlay" id="bcv-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Ajustar Tasa de Cambio BCV</h3>
+        <button class="btn-icon" id="btn-close-bcv-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem;">
+        La tasa se obtiene automáticamente de DolarApi.com. Si la red falla o deseas usar una tasa del día específica, ingrésala a continuación:
+      </p>
+      
+      <form id="form-manual-bcv">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="manual-bcv-rate">Tasa de Cambio Oficial (VES/USD)</label>
+          <input type="number" id="manual-bcv-rate" class="input-style" step="0.01" min="1.00" required>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btn-fetch-bcv-auto">
+            <i data-lucide="refresh-cw"></i> Forzar API
+          </button>
+          <button type="submit" class="btn-primary">
+            <i data-lucide="check"></i> Guardar Tasa
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Script Principal de Control -->
+  <script src="app.js"></script>
+
+</body>
+</html>
